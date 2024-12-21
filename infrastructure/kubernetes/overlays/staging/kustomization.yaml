@@ -1,0 +1,42 @@
+# Kustomize configuration for Medical Research Platform staging environment
+# Version: v5.0+
+# Purpose: Staging environment configuration with resource management and security features
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the base configuration
+bases:
+  - ../../base
+
+# Set staging namespace for all resources
+namespace: staging
+
+# Common labels for all resources in staging environment
+commonLabels:
+  app: medical-research-platform
+  environment: staging
+  version: latest
+  managed-by: kustomize
+
+# Strategic merge patches for staging-specific customizations
+patchesStrategicMerge:
+  # API service customizations including scaling and resource limits
+  - patches/api-deployment.yaml
+  # Frontend service customizations including scaling and resource limits
+  - patches/frontend-deployment.yaml
+  # Ingress configuration for staging domain and TLS
+  - patches/ingress.yaml
+
+# Additional resources specific to staging environment
+resources:
+  # Resource quotas for staging namespace
+  - quotas/resource-quota.yaml
+  # Network policies for staging environment security
+  - policies/network-policy.yaml
+
+# Images configuration will be inherited from base
+# No additional image transformations needed for staging
+
+# No additional configMapGenerator or secretGenerator needed
+# These should be managed through base configuration or external secrets management
