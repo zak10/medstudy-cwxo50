@@ -1,0 +1,267 @@
+// =============================================================================
+// Design System Mixins
+// Version: 1.0.0
+// Dependencies: sass ^1.63.0
+// =============================================================================
+
+@import 'variables';
+@import 'breakpoints';
+
+// =============================================================================
+// Functions
+// =============================================================================
+
+/// Enhanced spacing function with validation and negative value support
+/// @param {Number} $scale - Scale factor for spacing calculation
+/// @return {String} Calculated spacing value with rem unit
+/// @throws Error if scale parameter is invalid
+@function get-spacing($scale) {
+  @if type-of($scale) != 'number' {
+    @error 'Spacing scale must be a number, got: #{$scale}';
+  }
+
+  $base: 0.25rem; // 4px in rem
+  $value: $scale * $base;
+  
+  @return if($scale < 0, -$value, $value);
+}
+
+// =============================================================================
+// Elevation Mixins
+// =============================================================================
+
+/// Applies consistent box shadow elevation with transitions
+/// @param {Number} $level - Elevation level (1-4)
+/// @param {String} $transition-timing [ease-in-out] - Transition timing function
+/// @param {Boolean} $hover-elevation [false] - Enable hover state elevation
+@mixin elevation($level, $transition-timing: ease-in-out, $hover-elevation: false) {
+  @if not map-has-key($elevation-levels, $level) {
+    @error 'Invalid elevation level: #{$level}';
+  }
+
+  $shadow: map-get($elevation-levels, $level);
+  box-shadow: $shadow;
+  transition: box-shadow 0.2s $transition-timing;
+
+  @if $hover-elevation {
+    $next-level: min($level + 1, 4);
+    $hover-shadow: map-get($elevation-levels, $next-level);
+    
+    &:hover {
+      box-shadow: $hover-shadow;
+    }
+  }
+}
+
+// =============================================================================
+// Component Mixins
+// =============================================================================
+
+/// Enhanced card component styling
+/// @param {String} $padding [spacing(4)] - Card padding
+/// @param {Map} $border-options [()] - Custom border options
+/// @param {Boolean} $gradient-background [false] - Enable gradient background
+@mixin card($padding: spacing(4), $border-options: (), $gradient-background: false) {
+  $default-border: (
+    radius: 8px,
+    color: map-get($colors, gray, 200),
+    width: 1px,
+    style: solid
+  );
+  
+  $border-config: map-merge($default-border, $border-options);
+  
+  @if $gradient-background {
+    background: linear-gradient(
+      to bottom right,
+      color(gray, 50),
+      color(gray, 100)
+    );
+  } @else {
+    background-color: white;
+  }
+  
+  border-radius: map-get($border-config, radius);
+  border: map-get($border-config, width) map-get($border-config, style) map-get($border-config, color);
+  padding: $padding;
+  
+  @include elevation(1, ease-in-out, true);
+  
+  &:focus-within {
+    @include elevation(2);
+  }
+}
+
+/// Comprehensive form input styling
+/// @param {Map} $custom-transitions [()] - Custom transition properties
+@mixin input-base($custom-transitions: ()) {
+  $default-transitions: (
+    border: 0.2s ease-in-out,
+    background: 0.2s ease-in-out,
+    color: 0.2s ease-in-out
+  );
+  
+  $transitions: map-merge($default-transitions, $custom-transitions);
+  
+  width: 100%;
+  height: spacing(12);
+  padding: spacing(3) spacing(4);
+  background-color: white;
+  border: 1px solid color(gray, 300);
+  border-radius: 6px;
+  font-family: $font-family-primary;
+  font-size: 1rem;
+  color: color(gray, 900);
+  
+  transition-property: map-keys($transitions);
+  @each $prop, $timing in $transitions {
+    transition-timing-function: nth($timing, 2);
+    transition-duration: nth($timing, 1);
+  }
+  
+  &:hover:not(:disabled) {
+    border-color: color(gray, 400);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: color(primary);
+    box-shadow: 0 0 0 3px rgba(color(primary), 0.1);
+  }
+  
+  &:disabled {
+    background-color: color(gray, 100);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  &[aria-invalid="true"] {
+    border-color: color(error);
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(color(error), 0.1);
+    }
+  }
+}
+
+/// Extended button component styling
+/// @param {String} $variant [primary] - Button variant (primary, secondary, text)
+/// @param {String} $size [medium] - Button size (small, medium, large)
+/// @param {Boolean} $loading [false] - Loading state
+@mixin button-base($variant: primary, $size: medium, $loading: false) {
+  $sizes: (
+    small: (
+      padding: spacing(2) spacing(4),
+      font-size: 0.875rem
+    ),
+    medium: (
+      padding: spacing(3) spacing(6),
+      font-size: 1rem
+    ),
+    large: (
+      padding: spacing(4) spacing(8),
+      font-size: 1.125rem
+    )
+  );
+  
+  // Reset button styles
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-family-primary;
+  font-weight: map-get($font-weights, medium);
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+  
+  // Size styles
+  @if map-has-key($sizes, $size) {
+    $size-config: map-get($sizes, $size);
+    padding: map-get($size-config, padding);
+    font-size: map-get($size-config, font-size);
+  }
+  
+  // Variant styles
+  @case $variant {
+    primary {
+      background-color: color(primary);
+      color: white;
+      
+      &:hover:not(:disabled) {
+        background-color: darken(color(primary), 5%);
+      }
+      
+      &:active:not(:disabled) {
+        background-color: darken(color(primary), 10%);
+      }
+    }
+    secondary {
+      background-color: color(secondary);
+      color: white;
+      
+      &:hover:not(:disabled) {
+        background-color: darken(color(secondary), 5%);
+      }
+      
+      &:active:not(:disabled) {
+        background-color: darken(color(secondary), 10%);
+      }
+    }
+    text {
+      color: color(primary);
+      padding-left: spacing(2);
+      padding-right: spacing(2);
+      
+      &:hover:not(:disabled) {
+        background-color: rgba(color(primary), 0.05);
+      }
+      
+      &:active:not(:disabled) {
+        background-color: rgba(color(primary), 0.1);
+      }
+    }
+  }
+  
+  // Loading state
+  @if $loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      width: spacing(4);
+      height: spacing(4);
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      border-right-color: transparent;
+      animation: button-spin 0.75s linear infinite;
+    }
+  }
+  
+  // Disabled state
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  // Icon spacing
+  .icon + span,
+  span + .icon {
+    margin-left: spacing(2);
+  }
+}
+
+// Loading animation keyframes
+@keyframes button-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
