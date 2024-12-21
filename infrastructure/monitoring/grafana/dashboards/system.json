@@ -1,0 +1,369 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "datasource": "prometheus",
+        "enable": true,
+        "expr": "changes(up{service=~\"$service\", instance=~\"$instance\"}[1m]) > 0",
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "Deployments",
+        "textFormat": "Service deployment detected",
+        "titleFormat": "Deployment Event - {{instance}}"
+      }
+    ]
+  },
+  "dashboard": {
+    "id": "system-overview",
+    "uid": "system",
+    "title": "System Overview",
+    "tags": ["system", "infrastructure", "monitoring"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 36,
+    "version": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "editable": true
+  },
+  "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "green",
+                "value": 0.9
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": "prometheus",
+          "expr": "sum(up{service=~\"$service\", instance=~\"$instance\"}) / count(up{service=~\"$service\", instance=~\"$instance\"})",
+          "instant": true,
+          "legendFormat": "System Health"
+        }
+      ],
+      "title": "System Health Overview",
+      "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 2,
+      "targets": [
+        {
+          "datasource": "prometheus",
+          "expr": "rate(process_cpu_seconds_total{service=~\"$service\", instance=~\"$instance\"}[5m]) * 100",
+          "legendFormat": "{{instance}} - CPU %"
+        }
+      ],
+      "title": "CPU Usage",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "percent",
+          "min": 0,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 3,
+      "targets": [
+        {
+          "datasource": "prometheus",
+          "expr": "process_resident_memory_bytes{service=~\"$service\", instance=~\"$instance\"} / 1024 / 1024",
+          "legendFormat": "{{instance}} - Memory MB"
+        }
+      ],
+      "title": "Memory Usage",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "mbytes",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 4,
+      "targets": [
+        {
+          "datasource": "prometheus",
+          "expr": "pg_stat_activity_count{service=~\"$service\", instance=~\"$instance\"}",
+          "legendFormat": "{{instance}} - Active Connections"
+        }
+      ],
+      "title": "Database Connections",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "short",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 5,
+      "targets": [
+        {
+          "datasource": "prometheus",
+          "expr": "rate(redis_keyspace_hits_total{service=~\"$service\", instance=~\"$instance\"}[5m]) / (rate(redis_keyspace_hits_total{service=~\"$service\", instance=~\"$instance\"}[5m]) + rate(redis_keyspace_misses_total{service=~\"$service\", instance=~\"$instance\"}[5m])) * 100",
+          "legendFormat": "{{instance}} - Hit Ratio %"
+        }
+      ],
+      "title": "Cache Hit Ratio",
+      "type": "graph",
+      "yaxes": [
+        {
+          "format": "percent",
+          "min": 0,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 6,
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": "prometheus",
+          "expr": "ALERTS{alertstate='firing', service=~\"$service\", instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "title": "Active Alerts",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "alertname": "Alert Name",
+              "severity": "Severity",
+              "instance": "Instance"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": "prometheus",
+        "includeAll": true,
+        "multi": true,
+        "name": "instance",
+        "options": [],
+        "query": "label_values(up, instance)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": "prometheus",
+        "includeAll": true,
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": "label_values(up, service)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  }
+}
