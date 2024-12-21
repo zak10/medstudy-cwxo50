@@ -1,0 +1,253 @@
+{
+  "dashboard": {
+    "id": "frontend-monitoring",
+    "title": "Frontend Monitoring Dashboard",
+    "tags": ["frontend", "vue", "monitoring", "medical-research"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "schemaVersion": 36,
+    "editable": true,
+    "version": 1,
+    "panels": [
+      {
+        "title": "Client-Side Performance",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "panels": [
+          {
+            "title": "Page Load Time",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 1
+            },
+            "targets": [
+              {
+                "expr": "rate(frontend_page_load_duration_seconds_sum[5m]) / rate(frontend_page_load_duration_seconds_count[5m])",
+                "legendFormat": "Average Load Time"
+              }
+            ],
+            "yaxes": [
+              {
+                "format": "s",
+                "label": "Duration",
+                "min": 0
+              },
+              {
+                "format": "short",
+                "show": false
+              }
+            ],
+            "description": "Average page load time across all routes"
+          },
+          {
+            "title": "First Contentful Paint",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 1
+            },
+            "targets": [
+              {
+                "expr": "rate(frontend_fcp_duration_seconds_sum[5m]) / rate(frontend_fcp_duration_seconds_count[5m])",
+                "legendFormat": "FCP Time"
+              }
+            ],
+            "description": "Time to first contentful paint - key user experience metric"
+          }
+        ]
+      },
+      {
+        "title": "User Experience",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "panels": [
+          {
+            "title": "JavaScript Errors",
+            "type": "graph",
+            "datasource": "Prometheus",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 10
+            },
+            "targets": [
+              {
+                "expr": "sum(increase(frontend_js_errors_total[5m])) by (error_type)",
+                "legendFormat": "{{error_type}}"
+              }
+            ],
+            "alert": {
+              "name": "High Error Rate",
+              "conditions": [
+                {
+                  "type": "query",
+                  "query": {
+                    "params": ["A", "5m", "now"]
+                  },
+                  "reducer": {
+                    "type": "avg",
+                    "params": []
+                  },
+                  "evaluator": {
+                    "type": "gt",
+                    "params": [10]
+                  }
+                }
+              ],
+              "notifications": []
+            }
+          },
+          {
+            "title": "API Request Latency",
+            "type": "heatmap",
+            "datasource": "Prometheus",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 10
+            },
+            "targets": [
+              {
+                "expr": "rate(frontend_api_request_duration_seconds_bucket[5m])",
+                "format": "heatmap"
+              }
+            ],
+            "description": "Distribution of API request latencies"
+          }
+        ]
+      },
+      {
+        "title": "Resource Usage",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "panels": [
+          {
+            "title": "Memory Usage",
+            "type": "gauge",
+            "datasource": "Prometheus",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 19
+            },
+            "targets": [
+              {
+                "expr": "frontend_memory_usage_bytes / frontend_memory_limit_bytes * 100",
+                "legendFormat": "Memory Usage %"
+              }
+            ],
+            "thresholds": [
+              {
+                "value": 75,
+                "color": "yellow"
+              },
+              {
+                "value": 90,
+                "color": "red"
+              }
+            ],
+            "description": "Frontend memory usage percentage"
+          },
+          {
+            "title": "Bundle Size",
+            "type": "stat",
+            "datasource": "Prometheus",
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 19
+            },
+            "targets": [
+              {
+                "expr": "frontend_bundle_size_bytes",
+                "legendFormat": "Bundle Size"
+              }
+            ],
+            "format": "bytes",
+            "description": "Size of the JavaScript bundle"
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "changes(frontend_version[1m]) > 0",
+          "tagKeys": ["version"],
+          "titleFormat": "Frontend Deployment",
+          "enable": true
+        }
+      ]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(frontend_info, instance)",
+          "refresh": 2,
+          "includeAll": true
+        },
+        {
+          "name": "environment",
+          "type": "custom",
+          "query": "production,staging,development",
+          "current": {
+            "value": "production",
+            "text": "production"
+          },
+          "options": [
+            {
+              "value": "production",
+              "text": "production"
+            },
+            {
+              "value": "staging",
+              "text": "staging"
+            },
+            {
+              "value": "development",
+              "text": "development"
+            }
+          ]
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  }
+}
