@@ -1,0 +1,182 @@
+// =============================================================================
+// Typography System
+// Version: 1.0.0
+// Dependencies: sass ^1.63.0
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:math';
+@import './variables';
+
+// Font Scale Maps
+// -----------------------------------------------------------------------------
+$font-weights: (
+  regular: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700
+);
+
+$font-sizes: (
+  xs: 0.75rem,    // 12px
+  sm: 0.875rem,   // 14px
+  base: 1rem,     // 16px
+  lg: 1.125rem,   // 18px
+  xl: 1.25rem,    // 20px
+  2xl: 1.5rem,    // 24px
+  3xl: 1.875rem,  // 30px
+  4xl: 2.25rem,   // 36px
+  5xl: 3rem       // 48px
+);
+
+$line-heights: (
+  none: 1,
+  tight: 1.25,
+  snug: 1.375,
+  normal: 1.5,
+  relaxed: 1.625,
+  loose: 2
+);
+
+$letter-spacing: (
+  tighter: -0.05em,
+  tight: -0.025em,
+  normal: 0,
+  wide: 0.025em,
+  wider: 0.05em
+);
+
+// System Font Stack Fallbacks
+$font-fallbacks: (
+  sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
+);
+
+// Functions
+// -----------------------------------------------------------------------------
+@function get-font-size($size-key) {
+  @if map.has-key($font-sizes, $size-key) {
+    @return map.get($font-sizes, $size-key);
+  }
+  @error 'Invalid font size key: #{$size-key}';
+}
+
+@function get-line-height($height-key) {
+  @if map.has-key($line-heights, $height-key) {
+    @return map.get($line-heights, $height-key);
+  }
+  @error 'Invalid line height key: #{$height-key}';
+}
+
+// Mixins
+// -----------------------------------------------------------------------------
+@mixin text-style($size, $weight: regular, $line-height: normal, $spacing: normal) {
+  font-size: get-font-size($size);
+  font-weight: map.get($font-weights, $weight);
+  line-height: get-line-height($line-height);
+  letter-spacing: map.get($letter-spacing, $spacing);
+}
+
+@mixin heading($level) {
+  font-family: $font-family-primary, map.get($font-fallbacks, sans);
+  font-weight: map.get($font-weights, bold);
+  margin-bottom: 0.5em;
+  color: var(--text-heading);
+
+  @if $level == 1 {
+    @include text-style(5xl, bold, tight, tight);
+    @media (max-width: map.get($breakpoints, tablet)) {
+      font-size: get-font-size(4xl);
+    }
+  } @else if $level == 2 {
+    @include text-style(4xl, bold, tight, tight);
+    @media (max-width: map.get($breakpoints, tablet)) {
+      font-size: get-font-size(3xl);
+    }
+  } @else if $level == 3 {
+    @include text-style(3xl, bold, snug, tight);
+    @media (max-width: map.get($breakpoints, tablet)) {
+      font-size: get-font-size(2xl);
+    }
+  } @else if $level == 4 {
+    @include text-style(2xl, bold, snug, normal);
+  } @else if $level == 5 {
+    @include text-style(xl, bold, normal, normal);
+  } @else if $level == 6 {
+    @include text-style(lg, bold, normal, normal);
+  }
+}
+
+// Base Typography Styles
+// -----------------------------------------------------------------------------
+body {
+  font-family: $font-family-secondary, map.get($font-fallbacks, sans);
+  font-size: get-font-size(base);
+  line-height: get-line-height(normal);
+  font-weight: map.get($font-weights, regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+// Heading Styles
+h1 { @include heading(1); }
+h2 { @include heading(2); }
+h3 { @include heading(3); }
+h4 { @include heading(4); }
+h5 { @include heading(5); }
+h6 { @include heading(6); }
+
+// Utility Classes
+// -----------------------------------------------------------------------------
+@each $weight-name, $weight-value in $font-weights {
+  .font-#{$weight-name} {
+    font-weight: $weight-value;
+  }
+}
+
+@each $size-name, $size-value in $font-sizes {
+  .text-#{$size-name} {
+    font-size: $size-value;
+  }
+}
+
+@each $height-name, $height-value in $line-heights {
+  .leading-#{$height-name} {
+    line-height: $height-value;
+  }
+}
+
+@each $spacing-name, $spacing-value in $letter-spacing {
+  .tracking-#{$spacing-name} {
+    letter-spacing: $spacing-value;
+  }
+}
+
+// Font Family Utilities
+.font-primary {
+  font-family: $font-family-primary, map.get($font-fallbacks, sans);
+}
+
+.font-secondary {
+  font-family: $font-family-secondary, map.get($font-fallbacks, sans);
+}
+
+// Accessibility Enhancements
+// -----------------------------------------------------------------------------
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Text Selection
+::selection {
+  background-color: var(--selection-bg, rgba(52, 152, 219, 0.2));
+  color: var(--selection-text, inherit);
+}
