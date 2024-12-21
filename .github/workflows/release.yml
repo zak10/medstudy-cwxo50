@@ -1,0 +1,211 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+# Environment configuration
+env:
+  TF_WORKSPACE: production
+  NODE_ENV: production
+  PYTHON_VERSION: '3.11'
+  DEPLOYMENT_STRATEGY: blue-green
+  HEALTH_CHECK_RETRIES: '5'
+  TRAFFIC_SHIFT_INCREMENT: '20'
+
+# Concurrency control to prevent multiple deployments
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Verify semantic version format
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if ! [[ ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format. Must follow semantic versioning (vX.Y.Z)"
+            exit 1
+          fi
+
+      - name: Check CHANGELOG updates
+        run: |
+          if ! grep -q "${{ github.ref_name }}" CHANGELOG.md; then
+            echo "CHANGELOG.md must be updated with version ${{ github.ref_name }}"
+            exit 1
+          fi
+
+      - name: Run security compliance checks
+        uses: aquasecurity/trivy-action@v0.11.2
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'security-reports/trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Verify infrastructure prerequisites
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0"
+      - run: |
+          cd infrastructure/terraform/environments/production
+          terraform init
+          terraform validate
+
+  build:
+    name: Build Release Assets
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ECR_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/backend:${{ github.sha }}
+            ${{ secrets.ECR_REGISTRY }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Build frontend assets
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+          
+      - name: Generate deployment metadata
+        run: |
+          mkdir -p metadata
+          echo "version: ${{ github.ref_name }}" >> metadata/release.yml
+          echo "commit: ${{ github.sha }}" >> metadata/release.yml
+          echo "timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> metadata/release.yml
+
+      - name: Archive release artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-assets
+          path: |
+            dist/
+            metadata/
+            security-reports/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Production
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-assets
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Initialize Terraform
+        run: |
+          cd infrastructure/terraform/environments/production
+          terraform init
+          terraform plan -out=tfplan
+
+      - name: Deploy blue environment
+        id: deploy
+        run: |
+          cd infrastructure/terraform/environments/production
+          terraform apply -auto-approve tfplan
+          echo "deployment-url=$(terraform output -raw app_url)" >> $GITHUB_OUTPUT
+
+      - name: Health checks
+        run: |
+          for i in $(seq 1 ${{ env.HEALTH_CHECK_RETRIES }}); do
+            if curl -f "${{ steps.deploy.outputs.deployment-url }}/health"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+
+      - name: Gradual traffic shift
+        run: |
+          for i in $(seq 0 ${{ env.TRAFFIC_SHIFT_INCREMENT }} 100); do
+            aws elbv2 modify-listener --listener-arn ${{ steps.deploy.outputs.listener-arn }} \
+              --default-actions '[{"Type":"forward","ForwardConfig":{"TargetGroups":[{"TargetGroupArn":"${{ steps.deploy.outputs.blue-target-group }}","Weight":'$i'},{"TargetGroupArn":"${{ steps.deploy.outputs.green-target-group }}","Weight":'$((100-i))'}]}}]'
+            sleep 30
+          done
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Configure Sentry release
+        if: success()
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          sentry-cli releases new ${{ github.ref_name }}
+          sentry-cli releases set-commits ${{ github.ref_name }} --auto
+          sentry-cli releases finalize ${{ github.ref_name }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: medical-research-platform
+          SENTRY_PROJECT: production
