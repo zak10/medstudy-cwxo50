@@ -1,0 +1,181 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_ENV: production
+  CI: true
+  VITE_API_URL: ${{ secrets.VITE_API_URL }}
+  VITE_APP_VERSION: ${{ github.sha }}
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  NPM_CONFIG_AUDIT_LEVEL: high
+
+defaults:
+  run:
+    working-directory: src/web
+
+jobs:
+  validate:
+    name: Code Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules/
+            .vite/
+            dist/
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('vite.config.ts') }}
+          restore-keys: |
+            npm-${{ hashFiles('package-lock.json') }}-
+            npm-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run security audit
+        run: npm audit --audit-level=high
+        
+      - name: Type check
+        run: npm run type-check -- --strict
+        
+      - name: Lint check
+        run: npm run lint -- --max-warnings 0
+        
+      - name: Format check
+        run: npm run format-check
+        
+      - name: Analyze bundle size
+        run: npm run analyze-bundle
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules/
+            .vite/
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('vite.config.ts') }}
+          restore-keys: |
+            npm-${{ hashFiles('package-lock.json') }}-
+            npm-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run unit tests
+        run: npm run test:unit
+        
+      - name: Run component tests
+        run: npm run test:component
+        
+      - name: Run integration tests
+        run: npm run test:integration
+        
+      - name: Generate coverage report
+        run: npm run coverage
+        
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage
+          flags: unittests
+          fail_ci_if_error: true
+          
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+          if-no-files-found: error
+
+  build:
+    name: Production Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [validate, test]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules/
+            .vite/
+            dist/
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('vite.config.ts') }}
+          restore-keys: |
+            npm-${{ hashFiles('package-lock.json') }}-
+            npm-
+            
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build production bundle
+        run: npm run build:prod
+        
+      - name: Analyze bundle
+        run: npm run analyze
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error
+          
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundle-analysis
+          path: bundle-analysis/
+          retention-days: 7
+          if-no-files-found: warn
+          
+      - name: Generate build report
+        run: npm run generate-report
