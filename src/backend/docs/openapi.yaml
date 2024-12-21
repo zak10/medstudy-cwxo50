@@ -1,0 +1,603 @@
+openapi: 3.1.0
+info:
+  title: Medical Research Platform API
+  version: 1.0.0
+  description: |
+    Secure API for community-driven medical research platform with comprehensive validation and monitoring.
+    Enables protocol management, data collection, and analysis with HIPAA compliance.
+  contact:
+    name: API Support
+    email: api-support@example.com
+    url: https://docs.example.com/api
+
+servers:
+  - url: /api/v1
+    description: API v1 endpoints
+
+security:
+  - bearerAuth: []
+  - rateLimit: []
+
+paths:
+  /auth/register:
+    post:
+      summary: Register new user account
+      description: Creates a new user account with secure validation
+      operationId: registerUser
+      tags: [Authentication]
+      security: []  # No auth required for registration
+      x-ratelimit-limit: 5/m
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      description: Validates credentials and returns JWT tokens
+      operationId: loginUser
+      tags: [Authentication]
+      security: []
+      x-ratelimit-limit: 5/m
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Uses refresh token to obtain new access token
+      operationId: refreshToken
+      tags: [Authentication]
+      security: []
+      x-ratelimit-limit: 5/m
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token refresh successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /protocols:
+    get:
+      summary: List available protocols
+      description: Retrieves paginated list of research protocols
+      operationId: listProtocols
+      tags: [Protocols]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/SortParam'
+      responses:
+        '200':
+          description: Protocol list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolList'
+    post:
+      summary: Create new protocol
+      description: Creates new research protocol with validation
+      operationId: createProtocol
+      tags: [Protocols]
+      security:
+        - bearerAuth: []
+        - protocolCreator: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolCreate'
+      responses:
+        '201':
+          description: Protocol created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /protocols/{protocol_id}:
+    parameters:
+      - $ref: '#/components/parameters/ProtocolIdParam'
+    get:
+      summary: Get protocol details
+      description: Retrieves detailed protocol information
+      operationId: getProtocol
+      tags: [Protocols]
+      responses:
+        '200':
+          description: Protocol details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /data-points:
+    post:
+      summary: Submit data point
+      description: Submits new data point with validation
+      operationId: createDataPoint
+      tags: [Data Collection]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataPointCreate'
+      responses:
+        '201':
+          description: Data point created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPointResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token for authentication
+    rateLimit:
+      type: apiKey
+      in: header
+      name: X-Rate-Limit
+      description: Rate limiting controls
+    protocolCreator:
+      type: apiKey
+      in: header
+      name: X-Role
+      description: Required role for protocol creation
+
+  schemas:
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+        - password_confirm
+        - first_name
+        - last_name
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 12
+          pattern: ^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{12,}$
+          example: SecurePass123!
+        password_confirm:
+          type: string
+          format: password
+          example: SecurePass123!
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: John
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: Doe
+        profile:
+          type: object
+          additionalProperties: true
+          example:
+            bio: Research enthusiast
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    RefreshRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    AuthResponse:
+      type: object
+      required:
+        - success
+        - message
+        - data
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - access_token
+            - refresh_token
+            - token_type
+            - expires_in
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            token_type:
+              type: string
+              enum: [Bearer]
+            expires_in:
+              type: integer
+              description: Token expiry in seconds
+
+    ProtocolCreate:
+      type: object
+      required:
+        - title
+        - description
+        - requirements
+        - safety_params
+        - duration_weeks
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        requirements:
+          $ref: '#/components/schemas/ProtocolRequirements'
+        safety_params:
+          $ref: '#/components/schemas/SafetyParameters'
+        duration_weeks:
+          type: integer
+          minimum: 1
+          maximum: 52
+
+    ProtocolRequirements:
+      type: object
+      required:
+        - data_collection_frequency
+        - measurements
+      properties:
+        data_collection_frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        measurements:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/MeasurementRange'
+
+    SafetyParameters:
+      type: object
+      required:
+        - markers
+        - intervention_triggers
+      properties:
+        markers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SafetyMarker'
+        intervention_triggers:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterventionTrigger'
+
+    MeasurementRange:
+      type: object
+      required:
+        - min
+        - max
+        - unit
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        unit:
+          type: string
+          pattern: ^[a-zA-Z/%]+$
+        alert_threshold:
+          type: number
+        critical_threshold:
+          type: number
+
+    SafetyMarker:
+      type: object
+      required:
+        - critical_ranges
+        - alert_ranges
+      properties:
+        critical_ranges:
+          $ref: '#/components/schemas/MeasurementRange'
+        alert_ranges:
+          $ref: '#/components/schemas/MeasurementRange'
+        intervention_required:
+          type: boolean
+
+    InterventionTrigger:
+      type: object
+      required:
+        - condition
+        - action
+      properties:
+        condition:
+          type: string
+        action:
+          type: string
+        notification_required:
+          type: boolean
+        immediate_action:
+          type: boolean
+
+    DataPointCreate:
+      type: object
+      required:
+        - protocol_id
+        - type
+        - data
+      properties:
+        protocol_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [blood_work, check_in, biometric]
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/BloodWorkData'
+            - $ref: '#/components/schemas/CheckInData'
+            - $ref: '#/components/schemas/BiometricData'
+
+    BloodWorkData:
+      type: object
+      required:
+        - test_date
+        - lab_name
+        - lab_certification
+        - markers
+      properties:
+        test_date:
+          type: string
+          format: date-time
+        lab_name:
+          type: string
+          maxLength: 100
+        lab_certification:
+          type: string
+          pattern: ^[A-Z0-9]{4,10}$
+        markers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BloodMarker'
+
+    BloodMarker:
+      type: object
+      required:
+        - value
+        - unit
+      properties:
+        value:
+          type: number
+        unit:
+          type: string
+          pattern: ^[a-zA-Z/%]+$
+        reference_range:
+          $ref: '#/components/schemas/MeasurementRange'
+
+    CheckInData:
+      type: object
+      required:
+        - energy_level
+        - sleep_quality
+        - notes
+      properties:
+        energy_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+        sleep_quality:
+          type: integer
+          minimum: 1
+          maximum: 5
+        notes:
+          type: string
+          maxLength: 1000
+        side_effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/SideEffect'
+
+    SideEffect:
+      type: object
+      required:
+        - description
+        - severity
+      properties:
+        description:
+          type: string
+          maxLength: 200
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+
+    BiometricData:
+      type: object
+      required:
+        - measurements
+      properties:
+        measurements:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BiometricMeasurement'
+
+    BiometricMeasurement:
+      type: object
+      required:
+        - value
+        - unit
+      properties:
+        value:
+          type: number
+          minimum: 0
+        unit:
+          type: string
+          pattern: ^[a-zA-Z/%]+$
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number for pagination
+      required: false
+
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+      required: false
+
+    SortParam:
+      name: sort
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+      description: Sort direction
+      required: false
+
+    ProtocolIdParam:
+      name: protocol_id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+      description: Protocol unique identifier
+
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ErrorResponse:
+      description: Standard error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - success
+              - message
+              - error_code
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+              error_code:
+                type: string
+              details:
+                type: object
+                additionalProperties: true
