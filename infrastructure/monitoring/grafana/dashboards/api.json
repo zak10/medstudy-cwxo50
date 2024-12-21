@@ -1,0 +1,356 @@
+{
+  "dashboard": {
+    "id": "api-dashboard",
+    "uid": "api-metrics",
+    "title": "API Service Dashboard",
+    "tags": ["api", "service", "monitoring"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "schemaVersion": 36,
+    "editable": true,
+    "style": "dark",
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "title": "API Request Rate",
+        "type": "graph",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m])) by (status)",
+            "legendFormat": "{{status}}",
+            "interval": "30s"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 100,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "title": "Average Response Time",
+        "type": "graph",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "api:request_latency_seconds:5m",
+            "legendFormat": "latency",
+            "interval": "30s"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "gauge",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "100 * (1 - api:request_success_rate:5m)",
+            "legendFormat": "error %"
+          }
+        ],
+        "thresholds": {
+          "steps": [
+            {
+              "value": null,
+              "color": "green"
+            },
+            {
+              "value": 1,
+              "color": "yellow"
+            },
+            {
+              "value": 5,
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "title": "Resource Usage",
+        "type": "row",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        },
+        "collapsed": false,
+        "panels": [
+          {
+            "title": "Memory Usage",
+            "type": "gauge",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 17
+            },
+            "targets": [
+              {
+                "expr": "instance:memory_usage:percent{service=\"api\"}",
+                "legendFormat": "memory %"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 75,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            }
+          },
+          {
+            "title": "CPU Usage",
+            "type": "gauge",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 17
+            },
+            "targets": [
+              {
+                "expr": "instance:cpu_usage:percent{service=\"api\"}",
+                "legendFormat": "cpu %"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 85,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Database Metrics",
+        "type": "row",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 25
+        },
+        "collapsed": false,
+        "panels": [
+          {
+            "title": "Active Connections",
+            "type": "stat",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 26
+            },
+            "targets": [
+              {
+                "expr": "database:connections:total",
+                "legendFormat": "connections"
+              }
+            ]
+          },
+          {
+            "title": "Database Errors",
+            "type": "timeseries",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 26
+            },
+            "targets": [
+              {
+                "expr": "increase(django_db_errors_total[5m])",
+                "legendFormat": "errors"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Cache Performance",
+        "type": "row",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 34
+        },
+        "collapsed": false,
+        "panels": [
+          {
+            "title": "Cache Hit Ratio",
+            "type": "gauge",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 35
+            },
+            "targets": [
+              {
+                "expr": "cache:hit_ratio:5m",
+                "legendFormat": "hit ratio"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 80,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          {
+            "title": "Cache Connections",
+            "type": "stat",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 35
+            },
+            "targets": [
+              {
+                "expr": "redis_connected_clients",
+                "legendFormat": "clients"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Alert Status",
+        "type": "table",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 43
+        },
+        "targets": [
+          {
+            "expr": "ALERTS{severity=~\"warning|critical\"}",
+            "legendFormat": "alerts"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {},
+              "renameByName": {
+                "alertname": "Alert",
+                "severity": "Severity",
+                "state": "State"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
