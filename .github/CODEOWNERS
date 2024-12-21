@@ -1,0 +1,29 @@
+# Each line is a file pattern followed by one or more owners.
+# Order is important - the last matching pattern takes precedence.
+
+# Security-related code requires security team review
+**/security/**                  @security-team
+src/backend/core/security/     @security-team @backend-leads
+
+# Test files require QA team review
+**/tests/**                    @qa-team
+
+# Backend core components owned by backend leads
+src/backend/core/              @backend-leads
+
+# Backend services owned by backend team
+src/backend/services/          @backend-team
+
+# Frontend components owned by frontend team
+src/web/                       @frontend-team
+
+# Infrastructure and deployment configurations owned by DevOps
+infrastructure/                @devops-team
+.github/workflows/             @devops-team
+
+# Backend configuration requires both backend and DevOps review
+src/backend/config/           @backend-leads @devops-team
+
+# Default owners for everything else
+# This ensures project leads review any unmatched files
+*                             @project-leads
