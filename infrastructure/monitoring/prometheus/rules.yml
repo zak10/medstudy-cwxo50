@@ -1,0 +1,113 @@
+# Prometheus Recording Rules Configuration v2.45.0
+# Purpose: Define pre-computed metrics and aggregations for efficient querying and alerting
+# Referenced by: prometheus.yml in rule_files section
+# Used by: alerts.yml for alert rule conditions
+
+groups:
+  # Service-level metrics aggregations
+  - name: service_metrics
+    rules:
+      # Success rate calculation over 5m window
+      - record: api:request_success_rate:5m
+        expr: sum(rate(http_requests_total{status=~"2.."}[5m])) / sum(rate(http_requests_total[5m]))
+        labels:
+          service: api
+
+      # Average request latency over 5m window
+      - record: api:request_latency_seconds:5m
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])
+        labels:
+          service: api
+
+      # Request throughput by service and endpoint
+      - record: api:request_throughput:5m
+        expr: sum(rate(http_requests_total[5m])) by (service, endpoint)
+        labels:
+          service: api
+
+      # Error rate by service and endpoint
+      - record: api:error_rate:5m
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) by (service, endpoint) 
+          / sum(rate(http_requests_total[5m])) by (service, endpoint)
+        labels:
+          service: api
+
+  # Infrastructure resource metrics
+  - name: resource_metrics
+    rules:
+      # Memory usage percentage
+      - record: instance:memory_usage:percent
+        expr: |
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) 
+          / node_memory_MemTotal_bytes * 100
+        labels:
+          type: resource
+
+      # CPU usage percentage
+      - record: instance:cpu_usage:percent
+        expr: |
+          100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+        labels:
+          type: resource
+
+      # Disk usage percentage
+      - record: instance:disk_usage:percent
+        expr: |
+          100 - ((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes)
+        labels:
+          type: resource
+
+      # Network I/O bytes
+      - record: instance:network_io:bytes
+        expr: |
+          sum(rate(node_network_receive_bytes_total[5m])) 
+          + sum(rate(node_network_transmit_bytes_total[5m]))
+        labels:
+          type: resource
+
+  # Database performance metrics
+  - name: database_metrics
+    rules:
+      # Active database connections
+      - record: database:connections:total
+        expr: pg_stat_activity_count
+        labels:
+          service: database
+
+      # Average query latency
+      - record: database:query_latency:5m
+        expr: |
+          rate(pg_stat_statements_total_time_seconds[5m]) 
+          / rate(pg_stat_statements_calls[5m])
+        labels:
+          service: database
+
+      # Transaction rate
+      - record: database:transaction_rate:5m
+        expr: |
+          rate(pg_stat_database_xact_commit[5m]) 
+          + rate(pg_stat_database_xact_rollback[5m])
+        labels:
+          service: database
+
+      # Cache hit ratio
+      - record: cache:hit_ratio:5m
+        expr: |
+          rate(redis_keyspace_hits_total[5m]) 
+          / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) 
+          * 100
+        labels:
+          service: cache
+
+  # Business metrics
+  - name: business_metrics
+    rules:
+      # Protocol completion rate
+      - record: protocol:completion_rate:24h
+        expr: |
+          sum(rate(protocol_completions_total[24h])) 
+          / sum(rate(protocol_enrollments_total[24h])) 
+          * 100
+        labels:
+          type: business
