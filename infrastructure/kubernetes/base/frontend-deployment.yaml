@@ -1,0 +1,82 @@
+# Frontend Deployment configuration for Medical Research Platform
+# Kubernetes API version: v1.25+
+# Purpose: Manages the Vue.js frontend application deployment with high availability
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: medical-research-platform
+    component: frontend
+    tier: frontend
+    managed-by: kustomize
+spec:
+  # High availability configuration with 2 replicas
+  replicas: 2
+  
+  # Zero-downtime rolling update strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Maximum number of pods above desired count
+      maxUnavailable: 0  # Never go below desired replica count
+  
+  # Pod selector for deployment management
+  selector:
+    matchLabels:
+      app: medical-research-platform
+      component: frontend
+  
+  template:
+    metadata:
+      labels:
+        app: medical-research-platform
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        # Image configuration using Helm/Kustomize templating
+        image: {{ .Values.frontend.image }}:{{ .Values.frontend.tag }}
+        
+        # Container port configuration
+        ports:
+        - containerPort: 80
+          protocol: TCP
+          name: http
+        
+        # Resource allocation and limits
+        resources:
+          requests:
+            cpu: 100m     # Guaranteed minimum CPU
+            memory: 128Mi # Guaranteed minimum memory
+          limits:
+            cpu: 200m     # Maximum CPU allocation
+            memory: 256Mi # Maximum memory allocation
+        
+        # Application health monitoring
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30  # Wait before first probe
+          periodSeconds: 10        # Probe interval
+          timeoutSeconds: 5        # Probe timeout
+          successThreshold: 1      # Minimum consecutive successes
+          failureThreshold: 3      # Maximum consecutive failures
+        
+        # Service readiness monitoring
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5   # Shorter delay for readiness
+          periodSeconds: 5         # More frequent checks
+          timeoutSeconds: 3        # Shorter timeout
+          successThreshold: 1      # One success to be ready
+          failureThreshold: 3      # Three failures to be not ready
+        
+        # Security hardening configuration
+        securityContext:
+          runAsNonRoot: true           # Prevent root user execution
+          runAsUser: 1000              # Specific non-root user ID
+          allowPrivilegeEscalation: false  # Prevent privilege escalation
