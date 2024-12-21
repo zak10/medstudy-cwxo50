@@ -1,0 +1,39 @@
+# Kubernetes Service configuration for Medical Research Platform API
+# Version: v1
+# Purpose: Internal service exposure and load balancing for API backend pods
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  labels:
+    app: medical-research-platform
+    component: api
+    tier: backend
+    environment: production
+  annotations:
+    # Enable Prometheus metrics scraping
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+
+spec:
+  # Use ClusterIP for internal-only access
+  type: ClusterIP
+
+  # Port configuration mapping service port 80 to container port 8000
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+
+  # Pod selector matching API deployment labels
+  selector:
+    app: medical-research-platform
+    component: api
+
+  # Session handling configuration
+  sessionAffinity: None
+  
+  # Only include pods that are ready
+  publishNotReadyAddresses: false
