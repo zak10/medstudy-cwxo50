@@ -1,0 +1,234 @@
+// =============================================================================
+// Animation System
+// Version: 1.0.0
+// Dependencies: sass ^1.63.0
+// =============================================================================
+
+// Import transition timing variables
+@use 'variables' as vars;
+
+// Base Animation Keyframes
+// -----------------------------------------------------------------------------
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// Animation Mixins
+// -----------------------------------------------------------------------------
+
+// Fade In Animation
+@mixin fade-in($duration: 0.3s) {
+  @media (prefers-reduced-motion: no-preference) {
+    will-change: opacity;
+    animation: {
+      name: fade-in;
+      duration: $duration;
+      fill-mode: forwards;
+      timing-function: ease-in-out;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 1;
+  }
+
+  @supports not (animation-name: fade-in) {
+    opacity: 1;
+  }
+}
+
+// Fade Out Animation
+@mixin fade-out($duration: 0.3s) {
+  @media (prefers-reduced-motion: no-preference) {
+    will-change: opacity;
+    animation: {
+      name: fade-out;
+      duration: $duration;
+      fill-mode: forwards;
+      timing-function: ease-in-out;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 0;
+  }
+
+  @supports not (animation-name: fade-out) {
+    opacity: 0;
+  }
+}
+
+// Slide Up Animation
+@mixin slide-up($duration: 0.3s) {
+  @media (prefers-reduced-motion: no-preference) {
+    will-change: transform, opacity;
+    animation: {
+      name: slide-up;
+      duration: $duration;
+      fill-mode: forwards;
+      timing-function: ease-out;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @supports not (animation-name: slide-up) {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Slide Down Animation
+@mixin slide-down($duration: 0.3s) {
+  @media (prefers-reduced-motion: no-preference) {
+    will-change: transform, opacity;
+    animation: {
+      name: slide-down;
+      duration: $duration;
+      fill-mode: forwards;
+      timing-function: ease-out;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @supports not (animation-name: slide-down) {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Loading Spinner Animation
+@mixin loading-spinner($duration: 1s) {
+  @media (prefers-reduced-motion: no-preference) {
+    will-change: transform;
+    animation: {
+      name: spin;
+      duration: $duration;
+      iteration-count: infinite;
+      timing-function: linear;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      content: "Loading...";
+    }
+    animation: none;
+  }
+
+  @supports not (animation-name: spin) {
+    &::before {
+      content: "Loading...";
+    }
+  }
+}
+
+// Pulse Animation
+@mixin pulse($duration: 1.5s) {
+  @media (prefers-reduced-motion: no-preference) {
+    will-change: transform;
+    animation: {
+      name: pulse;
+      duration: $duration;
+      iteration-count: infinite;
+      timing-function: ease-in-out;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transform: scale(1);
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  @supports not (animation-name: pulse) {
+    transform: scale(1);
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+// Global Reduced Motion Settings
+// -----------------------------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// Export animation mixins for use in other files
+// -----------------------------------------------------------------------------
+:export {
+  fadeIn: fade-in;
+  fadeOut: fade-out;
+  slideUp: slide-up;
+  slideDown: slide-down;
+  loadingSpinner: loading-spinner;
+  pulse: pulse;
+}
