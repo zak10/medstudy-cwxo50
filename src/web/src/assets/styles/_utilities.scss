@@ -1,0 +1,263 @@
+// =============================================================================
+// Design System Utilities
+// Version: 1.0.0
+// Dependencies: sass ^1.63.0
+// =============================================================================
+
+@import 'variables';
+@import 'mixins';
+
+// =============================================================================
+// Layout Utilities
+// =============================================================================
+
+// Container
+.container {
+  max-width: $container-max-width;
+  margin: 0 auto;
+  padding: 0 spacing(4);
+
+  @include respond-to('tablet') {
+    padding: 0 spacing(6);
+  }
+
+  @include respond-to('desktop') {
+    padding: 0 spacing(8);
+  }
+}
+
+// Display
+@each $display in (none, block, inline-block, inline, flex, grid) {
+  .d-#{$display} {
+    display: #{$display};
+  }
+}
+
+// Flexbox
+.flex {
+  display: flex;
+
+  &-row { flex-direction: row; }
+  &-column { flex-direction: column; }
+  &-wrap { flex-wrap: wrap; }
+  &-nowrap { flex-wrap: nowrap; }
+  
+  &-justify {
+    &-start { justify-content: flex-start; }
+    &-end { justify-content: flex-end; }
+    &-center { justify-content: center; }
+    &-between { justify-content: space-between; }
+    &-around { justify-content: space-around; }
+  }
+  
+  &-items {
+    &-start { align-items: flex-start; }
+    &-end { align-items: flex-end; }
+    &-center { align-items: center; }
+    &-baseline { align-items: baseline; }
+    &-stretch { align-items: stretch; }
+  }
+}
+
+// Grid
+.grid {
+  display: grid;
+  
+  @for $i from 1 through 12 {
+    &-cols-#{$i} {
+      grid-template-columns: repeat(#{$i}, minmax(0, 1fr));
+    }
+  }
+}
+
+// =============================================================================
+// Spacing Utilities
+// =============================================================================
+
+// Margin
+@each $space-key, $space-value in $spacing {
+  .m-#{$space-key} { margin: $space-value; }
+  .mt-#{$space-key} { margin-top: $space-value; }
+  .mr-#{$space-key} { margin-right: $space-value; }
+  .mb-#{$space-key} { margin-bottom: $space-value; }
+  .ml-#{$space-key} { margin-left: $space-value; }
+  .mx-#{$space-key} {
+    margin-left: $space-value;
+    margin-right: $space-value;
+  }
+  .my-#{$space-key} {
+    margin-top: $space-value;
+    margin-bottom: $space-value;
+  }
+  
+  // Negative margins
+  .-m-#{$space-key} { margin: -$space-value; }
+  .-mt-#{$space-key} { margin-top: -$space-value; }
+  .-mr-#{$space-key} { margin-right: -$space-value; }
+  .-mb-#{$space-key} { margin-bottom: -$space-value; }
+  .-ml-#{$space-key} { margin-left: -$space-value; }
+}
+
+// Padding
+@each $space-key, $space-value in $spacing {
+  .p-#{$space-key} { padding: $space-value; }
+  .pt-#{$space-key} { padding-top: $space-value; }
+  .pr-#{$space-key} { padding-right: $space-value; }
+  .pb-#{$space-key} { padding-bottom: $space-value; }
+  .pl-#{$space-key} { padding-left: $space-value; }
+  .px-#{$space-key} {
+    padding-left: $space-value;
+    padding-right: $space-value;
+  }
+  .py-#{$space-key} {
+    padding-top: $space-value;
+    padding-bottom: $space-value;
+  }
+}
+
+// Gap
+@each $space-key, $space-value in $spacing {
+  .gap-#{$space-key} { gap: $space-value; }
+  .gap-x-#{$space-key} { column-gap: $space-value; }
+  .gap-y-#{$space-key} { row-gap: $space-value; }
+}
+
+// =============================================================================
+// Typography Utilities
+// =============================================================================
+
+// Font Families
+.font-primary { font-family: $font-family-primary; }
+.font-secondary { font-family: $font-family-secondary; }
+
+// Font Weights
+@each $weight-name, $weight-value in $font-weights {
+  .font-#{$weight-name} { font-weight: $weight-value; }
+}
+
+// Text Alignment
+@each $align in (left, center, right, justify) {
+  .text-#{$align} { text-align: #{$align}; }
+}
+
+// Text Transform
+@each $transform in (uppercase, lowercase, capitalize) {
+  .text-#{$transform} { text-transform: #{$transform}; }
+}
+
+// Line Height
+.leading {
+  &-none { line-height: 1; }
+  &-tight { line-height: 1.25; }
+  &-normal { line-height: 1.5; }
+  &-relaxed { line-height: 1.75; }
+  &-loose { line-height: 2; }
+}
+
+// =============================================================================
+// Color Utilities
+// =============================================================================
+
+// Text Colors
+@each $color-name, $color-value in $colors {
+  @if type-of($color-value) == 'map' {
+    @each $shade, $value in $color-value {
+      .text-#{$color-name}-#{$shade} { color: $value; }
+    }
+  } @else {
+    .text-#{$color-name} { color: $color-value; }
+  }
+}
+
+// Background Colors
+@each $color-name, $color-value in $colors {
+  @if type-of($color-value) == 'map' {
+    @each $shade, $value in $color-value {
+      .bg-#{$color-name}-#{$shade} { background-color: $value; }
+    }
+  } @else {
+    .bg-#{$color-name} { background-color: $color-value; }
+  }
+}
+
+// =============================================================================
+// Position Utilities
+// =============================================================================
+
+// Position
+@each $pos in (static, relative, absolute, fixed, sticky) {
+  .position-#{$pos} { position: #{$pos}; }
+}
+
+// Z-index
+@for $i from 0 through 50 {
+  .z-#{$i} { z-index: #{$i}; }
+}
+
+// =============================================================================
+// Responsive Utilities
+// =============================================================================
+
+@each $breakpoint-name, $breakpoint-value in $breakpoints {
+  @include respond-to($breakpoint-name) {
+    // Hidden/Visible utilities
+    .hidden-#{$breakpoint-name} { display: none; }
+    .visible-#{$breakpoint-name} { display: block; }
+    
+    // Responsive text alignment
+    @each $align in (left, center, right, justify) {
+      .text-#{$breakpoint-name}-#{$align} { text-align: #{$align}; }
+    }
+    
+    // Responsive flexbox
+    .flex-#{$breakpoint-name} {
+      &-row { flex-direction: row; }
+      &-column { flex-direction: column; }
+      &-wrap { flex-wrap: wrap; }
+      &-nowrap { flex-wrap: nowrap; }
+    }
+    
+    // Responsive grid columns
+    @for $i from 1 through 12 {
+      .grid-cols-#{$breakpoint-name}-#{$i} {
+        grid-template-columns: repeat(#{$i}, minmax(0, 1fr));
+      }
+    }
+  }
+}
+
+// =============================================================================
+// Accessibility Utilities
+// =============================================================================
+
+// Screen reader only
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Focus outline
+.focus-visible {
+  outline: 2px solid color(primary);
+  outline-offset: 2px;
+}
+
+// =============================================================================
+// Print Utilities
+// =============================================================================
+
+@media print {
+  .print-hidden { display: none !important; }
+  .print-visible { display: block !important; }
+  .print-transparent { color: transparent !important; }
+  .print-break-before { page-break-before: always; }
+  .print-break-after { page-break-after: always; }
+  .print-no-break { page-break-inside: avoid; }
+}
