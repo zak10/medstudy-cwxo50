@@ -1,0 +1,177 @@
+name: Infrastructure CI
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+    paths:
+      - 'infrastructure/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'infrastructure/**'
+
+# Required permissions for OIDC authentication and PR interactions
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  security-events: write
+
+# Environment variables used across jobs
+env:
+  TERRAFORM_VERSION: '1.5.0'
+  AWS_REGION: 'us-east-1'
+  TF_INPUT: '0'
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  terraform-validate:
+    name: Validate Terraform Configuration
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [staging, production]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        working-directory: infrastructure/terraform
+        run: |
+          terraform fmt -check -recursive
+          if [ $? -ne 0 ]; then
+            echo "Error: Terraform files require formatting. Run 'terraform fmt -recursive' locally."
+            exit 1
+          fi
+
+      - name: Initialize Terraform
+        working-directory: infrastructure/terraform/environments/${{ matrix.environment }}
+        run: |
+          terraform init -input=false
+          if [ $? -ne 0 ]; then
+            echo "Error: Terraform initialization failed"
+            exit 1
+          fi
+
+      - name: Validate Terraform Configuration
+        working-directory: infrastructure/terraform/environments/${{ matrix.environment }}
+        run: |
+          terraform validate
+          if [ $? -ne 0 ]; then
+            echo "Error: Terraform validation failed"
+            exit 1
+          fi
+
+      - name: Run tfsec Security Scan
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: infrastructure/terraform/environments/${{ matrix.environment }}
+          format: sarif
+          soft_fail: true
+          output_file: tfsec-results-${{ matrix.environment }}.sarif
+
+      - name: Upload Security Results
+        uses: github/codeql-action/upload-sarif@v2
+        if: success() || failure()
+        with:
+          sarif_file: tfsec-results-${{ matrix.environment }}.sarif
+          category: tfsec-${{ matrix.environment }}
+
+  terraform-plan:
+    name: Generate Terraform Plan
+    needs: terraform-validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [staging, production]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_${{ matrix.environment }} }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Initialize Terraform
+        working-directory: infrastructure/terraform/environments/${{ matrix.environment }}
+        run: |
+          terraform init -input=false
+          if [ $? -ne 0 ]; then
+            echo "Error: Terraform initialization failed"
+            exit 1
+          fi
+
+      - name: Generate Terraform Plan
+        id: plan
+        working-directory: infrastructure/terraform/environments/${{ matrix.environment }}
+        run: |
+          terraform plan -input=false -detailed-exitcode -out=tfplan 2>&1 | tee plan.txt
+          planExitCode=$?
+          
+          # Exit codes:
+          # 0 = No changes
+          # 1 = Error
+          # 2 = Changes present
+          
+          if [ $planExitCode -eq 1 ]; then
+            echo "Error: Terraform plan failed"
+            exit 1
+          fi
+          
+          # Check for destructive changes
+          if grep -q "destroy" plan.txt; then
+            echo "::warning ::Plan contains destructive changes!"
+          fi
+          
+          # Save plan output for PR comment
+          echo "PLAN_OUTPUT<<EOF" >> $GITHUB_ENV
+          cat plan.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const planOutput = process.env.PLAN_OUTPUT;
+            const environment = '${{ matrix.environment }}';
+            
+            const comment = `### Terraform Plan Output for ${environment}
+            \`\`\`hcl
+            ${planOutput}
+            \`\`\`
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan-${{ matrix.environment }}
+          path: infrastructure/terraform/environments/${{ matrix.environment }}/tfplan
+          retention-days: 5
