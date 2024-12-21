@@ -1,0 +1,29 @@
+# Kubernetes Service configuration for Vue.js frontend application
+# Version: v1.25+
+# Purpose: Exposes frontend application internally and to ALB ingress
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: frontend-service
+  labels:
+    app: medical-research-platform
+    component: frontend
+    tier: web
+    managed-by: kustomize
+
+spec:
+  # Using ClusterIP for internal access and ALB ingress integration
+  type: ClusterIP
+  
+  # Port configuration for HTTP traffic
+  ports:
+    - port: 80            # Service port
+      targetPort: 80      # Container port
+      protocol: TCP       # Transport protocol
+      name: http         # Port name for reference
+  
+  # Pod selector for service discovery
+  selector:
+    app: medical-research-platform
+    component: frontend
