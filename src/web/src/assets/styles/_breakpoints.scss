@@ -1,0 +1,197 @@
+// _breakpoints.scss
+// Version: 1.0.0
+// Dependencies: sass ^1.63.0
+// Purpose: Defines responsive design breakpoints and mixins for mobile-first implementation
+
+// =============================================================================
+// Breakpoint Configuration
+// =============================================================================
+
+/// Core breakpoint definitions
+$breakpoints: (
+  mobile: 320px,
+  tablet: 768px,
+  desktop: 1024px,
+  wide: 1440px
+) !default;
+
+/// Container configuration
+$container-max-width: 1200px !default;
+$container-gutters: (
+  mobile: 16px,
+  tablet: 24px,
+  desktop: 32px
+) !default;
+
+/// System configuration
+$breakpoint-unit: px !default;
+$default-min-width: 320px !default;
+$default-max-width: 1440px !default;
+
+// =============================================================================
+// Functions
+// =============================================================================
+
+/// Retrieves and validates breakpoint value
+/// @param {String} $name - Breakpoint name to retrieve
+/// @return {Number} Pixel value for the specified breakpoint
+/// @throws Error if breakpoint not found
+@function get-breakpoint($name) {
+  @if not $name {
+    @error 'Breakpoint name parameter is required.';
+  }
+  
+  @if not map-has-key($breakpoints, $name) {
+    @error 'Breakpoint `#{$name}` not found in $breakpoints map.';
+  }
+  
+  $value: map-get($breakpoints, $name);
+  
+  @if unit($value) != $breakpoint-unit {
+    @error 'Breakpoint `#{$name}` must use #{$breakpoint-unit} units.';
+  }
+  
+  @return $value;
+}
+
+/// Validates breakpoint order
+/// @param {String} $lower - Lower breakpoint name
+/// @param {String} $upper - Upper breakpoint name
+/// @return {Boolean} True if valid, throws error if invalid
+@function validate-breakpoint-order($lower, $upper) {
+  $lower-value: get-breakpoint($lower);
+  $upper-value: get-breakpoint($upper);
+  
+  @if $lower-value >= $upper-value {
+    @error 'Invalid breakpoint order: #{$lower} (#{$lower-value}) must be less than #{$upper} (#{$upper-value}).';
+  }
+  
+  @return true;
+}
+
+// =============================================================================
+// Mixins
+// =============================================================================
+
+/// Generates mobile-first media query
+/// @param {String} $breakpoint - Breakpoint name
+@mixin respond-to($breakpoint) {
+  $min-width: get-breakpoint($breakpoint);
+  
+  @media screen and (min-width: $min-width) {
+    @content;
+  }
+  
+  // Provide fallback for older browsers
+  @media screen and \0 {
+    @content;
+  }
+}
+
+/// Generates media query between breakpoints
+/// @param {String} $lower - Lower breakpoint name
+/// @param {String} $upper - Upper breakpoint name
+@mixin respond-between($lower, $upper) {
+  $valid: validate-breakpoint-order($lower, $upper);
+  $min-width: get-breakpoint($lower);
+  $max-width: get-breakpoint($upper) - 1px;
+  
+  @media screen and (min-width: $min-width) and (max-width: $max-width) {
+    @content;
+  }
+  
+  // Provide fallback for older browsers
+  @media screen and \0 {
+    @content;
+  }
+}
+
+/// Applies responsive container styling
+/// @param {None}
+@mixin container {
+  width: 100%;
+  max-width: $container-max-width;
+  margin-left: auto;
+  margin-right: auto;
+  
+  // Default mobile gutter
+  padding-left: map-get($container-gutters, mobile);
+  padding-right: map-get($container-gutters, mobile);
+  
+  // Responsive gutters
+  @each $breakpoint, $gutter in $container-gutters {
+    @if $breakpoint != mobile {
+      @include respond-to($breakpoint) {
+        padding-left: $gutter;
+        padding-right: $gutter;
+      }
+    }
+  }
+  
+  // Print media handling
+  @media print {
+    max-width: none;
+    padding: 0;
+  }
+}
+
+// =============================================================================
+// Validation
+// =============================================================================
+
+// Validate breakpoint map on import
+@if length($breakpoints) == 0 {
+  @error '$breakpoints map cannot be empty.';
+}
+
+// Validate ascending order of breakpoints
+$previous-value: $default-min-width;
+@each $breakpoint, $value in $breakpoints {
+  @if $value < $previous-value {
+    @error 'Breakpoints must be in ascending order. #{$breakpoint}: #{$value} is less than previous value: #{$previous-value}';
+  }
+  $previous-value: $value;
+}
+
+// Validate container gutters map
+@each $breakpoint, $gutter in $container-gutters {
+  @if not map-has-key($breakpoints, $breakpoint) {
+    @error 'Container gutter breakpoint `#{$breakpoint}` must exist in $breakpoints map.';
+  }
+}
+```
+
+This implementation provides a robust, enterprise-grade SCSS breakpoint system with the following key features:
+
+1. Comprehensive breakpoint definitions matching the technical specifications
+2. Mobile-first responsive design approach
+3. Flexible container system with responsive gutters
+4. Extensive error checking and validation
+5. Browser compatibility fallbacks
+6. Print media handling
+7. Detailed documentation and type checking
+
+The file exports:
+- `$breakpoints` map for breakpoint values
+- `respond-to` mixin for mobile-first media queries
+- `respond-between` mixin for ranged media queries
+- `container` mixin for responsive containers
+
+Usage examples:
+```scss
+.element {
+  // Mobile-first responsive design
+  @include respond-to('tablet') {
+    // Styles for tablet and up
+  }
+  
+  // Range-specific styles
+  @include respond-between('tablet', 'desktop') {
+    // Styles only for tablet to desktop range
+  }
+}
+
+.container {
+  @include container;
+  // Applies responsive container with gutters
+}
