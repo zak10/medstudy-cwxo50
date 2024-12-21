@@ -1,0 +1,49 @@
+# Kustomize configuration for production environment
+# Version: v1beta1
+# Purpose: Production-specific configuration extending base with scaling and security
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference base configuration
+bases:
+  - ../../base
+
+# Production namespace
+namespace: medical-research-prod
+
+# Production environment labels
+commonLabels:
+  app: medical-research-platform
+  environment: production
+  tier: production
+  managed-by: kustomize
+
+# Strategic merge patches for production configurations
+patchesStrategicMerge:
+  # API service production configuration patches
+  - patches/api-deployment-patch.yaml
+  # Frontend service production configuration patches
+  - patches/frontend-deployment-patch.yaml
+
+# Additional production-specific resources
+resources:
+  # Network policies for pod-to-pod communication security
+  - resources/network-policy.yaml
+  # Pod disruption budget for high availability
+  - resources/pod-disruption-budget.yaml
+  # Resource quotas for production namespace
+  - resources/resource-quota.yaml
+  # Horizontal pod autoscaling configuration
+  - resources/horizontal-pod-autoscaler.yaml
+
+# Production-specific configurations
+configMapGenerator: []  # No production-specific configmaps needed
+
+secretGenerator: []  # Secrets managed through external secret management
+
+# Resource transformers
+transformers: []  # No custom transformers needed
+
+# Validation and webhook configurations
+configurations: []  # Using default validation
