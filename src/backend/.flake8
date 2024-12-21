@@ -1,0 +1,49 @@
+[flake8]
+# Maximum line length balancing readability with screen space
+max-line-length = 100
+
+# Strict cyclomatic complexity limit for medical domain code quality
+max-complexity = 10
+
+# Standard paths to exclude from linting process
+exclude = .git,__pycache__,build,dist,*.egg-info
+
+# Error codes to ignore for Black formatter compatibility
+ignore = E203,W503
+
+# Relaxed documentation rules for test files while maintaining core quality checks
+per-file-ignores = tests/*:S101,D100,D101,D102,D103
+
+# Enforces Google style docstrings for standardized documentation
+docstring-convention = google
+
+# Enforces PEP8 standard import ordering for consistent code organization
+import-order-style = pep8
+
+# Additional plugin configurations for medical domain requirements
+# flake8-docstrings: Enforce comprehensive documentation
+# flake8-import-order: Maintain consistent import structure
+select = C,E,F,W,B,B950,D,I
+
+# Require docstrings for all public modules, classes, and functions
+require-docstrings = True
+
+# Enforce strict whitespace standards
+no-whitespace-before = ','
+no-whitespace-after = ','
+
+# Additional security-focused checks
+extend-select = S
+
+# Statistics output for CI/CD reporting
+statistics = True
+count = True
+
+# Format output for better CI integration
+format = %(path)s:%(row)d:%(col)d: %(code)s %(text)s
+
+# Ensure all files end with a newline
+end-of-file = True
+
+# Enable all available checks for maximum code quality
+enable-extensions = G,C,B,W,D,I,S
