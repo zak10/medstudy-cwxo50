@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    command: pytest -v --cov=. --cov-report=xml
+    volumes:
+      - ./:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.test
+      - DJANGO_DEBUG=False
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/test_db
+      - REDIS_URL=redis://cache:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@queue:5672/
+    depends_on:
+      - db
+      - cache
+      - queue
+    networks:
+      - test
+
+  db:
+    image: postgres:15-alpine  # v15+ as per technical specifications
+    environment:
+      - POSTGRES_DB=test_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    tmpfs:
+      - /var/lib/postgresql/data  # Ephemeral storage for clean test runs
+    networks:
+      - test
+
+  cache:
+    image: redis:7-alpine  # v7.0+ as per technical specifications
+    command: redis-server --save "" --appendonly no  # Disable persistence for testing
+    tmpfs:
+      - /data  # Ephemeral storage for clean test runs
+    networks:
+      - test
+
+  queue:
+    image: rabbitmq:3.11-management-alpine  # v3.11+ as per technical specifications
+    tmpfs:
+      - /var/lib/rabbitmq  # Ephemeral storage for clean test runs
+    networks:
+      - test
+
+networks:
+  test:
+    driver: bridge  # Isolated network for testing
