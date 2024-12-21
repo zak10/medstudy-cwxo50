@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <!-- Primary Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Medical Research Platform for community-driven observational studies">
+    <meta name="theme-color" content="#2C3E50">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' api.medicalresearch.com; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
+    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+
+    <title>Medical Research Platform</title>
+
+    <!-- Preconnect to External Resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://api.medicalresearch.com">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="./src/main.ts" as="script" type="module">
+    <link rel="preload" href="./src/assets/styles/main.scss" as="style">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./src/assets/styles/main.scss">
+</head>
+<body>
+    <!-- Application Root -->
+    <div id="app" role="application" aria-label="Medical Research Platform">
+        <!-- Vue.js application will be mounted here -->
+    </div>
+
+    <!-- No JavaScript Fallback -->
+    <noscript role="alert" aria-live="assertive">
+        <div class="noscript-message">
+            JavaScript is required to run this application. Please enable JavaScript or use a modern browser.
+        </div>
+    </noscript>
+
+    <!-- Application Entry Point -->
+    <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
