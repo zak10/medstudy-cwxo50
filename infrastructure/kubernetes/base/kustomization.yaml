@@ -1,0 +1,27 @@
+# kustomize.config.k8s.io/v1beta1 - Kustomize v5.0+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base configuration for Medical Research Platform Kubernetes resources
+# This serves as the foundation for environment-specific overlays
+
+# Target namespace for all resources
+namespace: default
+
+# Common labels applied to all resources for consistent identification and management
+commonLabels:
+  app: medical-research-platform
+  environment: base
+
+# Core Kubernetes resource configurations
+resources:
+  # API service resources
+  - api-deployment.yaml    # Deployment configuration for API service
+  - api-service.yaml       # Service configuration for API deployment
+  
+  # Frontend application resources
+  - frontend-deployment.yaml    # Deployment configuration for frontend application
+  - frontend-service.yaml       # Service configuration for frontend deployment
+  
+  # Ingress configuration
+  - ingress.yaml               # External access and routing rules
