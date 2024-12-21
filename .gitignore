@@ -1,0 +1,158 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+coverage/
+.tox/
+.mypy_cache/
+*.egg-info/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment Files
+.env
+.env.*
+!.env.example
+!src/backend/.env.example
+
+# Build Output
+dist/
+build/
+public/
+*.egg-info/
+
+# IDE Settings
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# System Files
+.DS_Store
+Thumbs.db
+*.bak
+*~
+
+# Logs and Databases
+*.log
+logs/
+*.sqlite3
+*.sqlite
+*.db
+
+# Infrastructure
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraformrc
+terraform.rc
+
+# Test Reports
+junit.xml
+coverage.xml
+.coverage.*
+htmlcov/
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# Docker
+.docker/
+docker-compose.override.yml
+*.env.docker
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+tmp/
+
+# Security and Keys
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# Documentation Generated
+docs/_build/
+site/
+
+# Dependency Directories
+bower_components/
+jspm_packages/
+
+# Compiled Files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packaging
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Media and Generated Assets
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.mov
+*.mp4
+*.mp3
+*.flv
+*.fla
+*.swf
+
+# Generated Source Maps
+*.js.map
+*.css.map
+
+# Local Development Overrides
+docker-compose.override.yaml
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Code Coverage and Quality Reports
+.scannerwork/
+.sonarqube/
+eslint-report.json
+checkstyle-result.xml
+pylint.txt
+bandit-report.json
+
+# Misc
+.history/
+.git/
+*.pid
+*.seed
+*.pid.lock
