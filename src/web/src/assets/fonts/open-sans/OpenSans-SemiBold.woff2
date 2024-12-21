@@ -1,0 +1,28 @@
+// This is a binary WOFF2 font file that should be generated with the following properties:
+
+// Font Metadata
+Family: Open Sans
+Weight: 600 (SemiBold)
+Style: normal
+Display: swap
+Format: WOFF2
+Unicode Range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD
+
+// Optimization Settings
+Subsetting: enabled
+Compression: WOFF2
+Preload Strategy: enabled
+Fallback Fonts: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif
+
+// Performance Configuration
+Loading Strategy: swap
+Cache Headers: Cache-Control: public, max-age=31536000, immutable
+CORS Headers: Access-Control-Allow-Origin: *
+
+// Compliance
+WCAG: 2.1 AA compliant
+License: Open Font License
+Attribution Required: true
+
+// The actual binary WOFF2 data would be generated using a font subsetting tool 
+// with these specifications and optimizations applied
