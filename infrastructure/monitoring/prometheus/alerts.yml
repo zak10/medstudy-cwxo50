@@ -1,0 +1,160 @@
+# Prometheus Alert Rules Configuration
+# Version: 2.45.0
+# Purpose: Define critical monitoring thresholds and alert conditions for the Medical Research Platform
+
+groups:
+  # Service Health Alerts
+  - name: service_alerts
+    rules:
+      # High Error Rate Alert
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: High API error rate detected
+          description: Error rate is above 5% for 5 minutes
+          runbook_url: https://wiki.example.com/runbooks/high-error-rate
+
+      # High Latency Alert
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: High API latency detected
+          description: 95th percentile latency is above 2 seconds for 5 minutes
+          runbook_url: https://wiki.example.com/runbooks/high-latency
+
+      # Service Down Alert
+      - alert: ServiceDown
+        expr: up{job=~"api|web|worker"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: platform
+        annotations:
+          summary: Service is down
+          description: "{{ $labels.job }} service is down"
+          runbook_url: https://wiki.example.com/runbooks/service-down
+
+  # Resource Utilization Alerts
+  - name: resource_alerts
+    rules:
+      # High Memory Usage Alert
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          type: resource
+        annotations:
+          summary: High memory usage detected
+          description: Memory usage above 85% for 10 minutes
+          runbook_url: https://wiki.example.com/runbooks/high-memory-usage
+
+      # High CPU Usage Alert
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+          type: resource
+        annotations:
+          summary: High CPU usage detected
+          description: CPU usage above 90% for 10 minutes
+          runbook_url: https://wiki.example.com/runbooks/high-cpu-usage
+
+      # Disk Space Alert
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          type: resource
+        annotations:
+          summary: Low disk space
+          description: "Disk space usage above 90% on {{ $labels.device }}"
+          runbook_url: https://wiki.example.com/runbooks/disk-space-low
+
+  # Database Performance Alerts
+  - name: database_alerts
+    rules:
+      # High DB Connections Alert
+      - alert: HighDBConnections
+        expr: sum(pg_stat_activity_count) by (datname) > pg_settings_max_connections * 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: High database connection count
+          description: Database connections exceeded 80% of max connections for 5 minutes
+          runbook_url: https://wiki.example.com/runbooks/high-db-connections
+
+      # Slow Queries Alert
+      - alert: SlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration{datname!~"template.*"}[5m]) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: Slow database queries detected
+          description: Queries taking longer than 30 seconds detected
+          runbook_url: https://wiki.example.com/runbooks/slow-queries
+
+      # Replication Lag Alert
+      - alert: ReplicationLag
+        expr: pg_stat_replication_lag_bytes > 1024 * 1024 * 50
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: Database replication lag detected
+          description: Replication lag exceeds 50MB for 5 minutes
+          runbook_url: https://wiki.example.com/runbooks/replication-lag
+
+  # Security Alerts
+  - name: security_alerts
+    rules:
+      # Authentication Failures Alert
+      - alert: AuthenticationFailures
+        expr: sum(increase(auth_failures_total{service=~"api|web"}[5m])) by (service) > 50
+        for: 5m
+        labels:
+          severity: critical
+          type: security
+        annotations:
+          summary: High number of authentication failures
+          description: More than 50 authentication failures in 5 minutes
+          runbook_url: https://wiki.example.com/runbooks/auth-failures
+
+      # Rate Limit Exceeded Alert
+      - alert: RateLimitExceeded
+        expr: sum(increase(rate_limit_exceeded_total[5m])) by (service) > 100
+        for: 5m
+        labels:
+          severity: warning
+          type: security
+        annotations:
+          summary: Rate limit exceeded
+          description: Rate limit exceeded more than 100 times in 5 minutes
+          runbook_url: https://wiki.example.com/runbooks/rate-limit-exceeded
+
+      # Suspicious Activity Alert
+      - alert: SuspiciousActivity
+        expr: sum(increase(suspicious_activity_total{severity="high"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: critical
+          type: security
+        annotations:
+          summary: Suspicious activity detected
+          description: High severity suspicious activity detected
+          runbook_url: https://wiki.example.com/runbooks/suspicious-activity
