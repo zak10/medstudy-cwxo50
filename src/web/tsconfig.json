@@ -1,0 +1,70 @@
+{
+  "compilerOptions": {
+    // ECMAScript Target and Module Configuration
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+
+    // Type Checking and Strict Mode
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Module Resolution and Path Configuration
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+
+    // Build and Output Configuration
+    "skipLibCheck": true,
+    "noEmit": true,
+    "sourceMap": true,
+    "allowJs": true,
+
+    // Vue and Framework Support
+    "jsx": "preserve",
+
+    // Type Definitions
+    "types": [
+      "vite/client",
+      "vitest",
+      "node",
+      "vue"
+    ]
+  },
+
+  // Project File Management
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage"
+  ],
+
+  // Project References
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
