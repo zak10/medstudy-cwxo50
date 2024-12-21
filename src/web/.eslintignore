@@ -1,0 +1,17 @@
+dist/**
+
+# Dependencies
+node_modules/**
+
+# Test coverage reports
+coverage/**
+
+# TypeScript declaration files
+*.d.ts
+
+# Configuration files
+*.config.js
+*.config.ts
+
+# Static assets
+src/assets/**
