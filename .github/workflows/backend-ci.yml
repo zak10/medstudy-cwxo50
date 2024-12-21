@@ -1,0 +1,128 @@
+name: Backend CI
+
+env:
+  PYTHON_VERSION: "3.11"
+  POETRY_VERSION: "1.5.0"
+  POSTGRES_VERSION: "15-alpine"
+  REDIS_VERSION: "7-alpine"
+  RABBITMQ_VERSION: "3.11-management-alpine"
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    name: Run Tests and Quality Checks
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd 'redis-cli ping'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:${{ env.RABBITMQ_VERSION }}
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd 'rabbitmq-diagnostics -q ping'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Required for proper code coverage
+          lfs: true  # Support for Git LFS
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Poetry
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Install dependencies
+        run: |
+          cd src/backend
+          poetry install --no-interaction --no-root
+
+      - name: Run security checks
+        run: |
+          cd src/backend
+          poetry run safety check
+
+      - name: Run linting
+        run: |
+          cd src/backend
+          poetry run flake8 --max-complexity=10
+
+      - name: Run type checking
+        run: |
+          cd src/backend
+          poetry run mypy . --strict
+
+      - name: Run tests with coverage
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+          DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD }}@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          RABBITMQ_URL: amqp://guest:guest@localhost:5672/
+        run: |
+          cd src/backend
+          poetry run pytest \
+            --cov=. \
+            --cov-report=xml \
+            --cov-fail-under=80 \
+            --junitxml=test-results.xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: src/backend/coverage.xml
+          retention-days: 14
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: src/backend/test-results.xml
+          retention-days: 14
