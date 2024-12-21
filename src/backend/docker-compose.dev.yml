@@ -1,0 +1,100 @@
+version: '3.8'
+
+# Project name for development environment
+name: medical_research_platform_dev
+
+services:
+  # API service running Django development server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - DJANGO_DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/medical_research
+      - REDIS_URL=redis://cache:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@queue:5672/
+    depends_on:
+      - db
+      - cache
+      - queue
+    networks:
+      - development
+
+  # Celery worker service for background tasks
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    command: celery -A celery worker -l debug
+    volumes:
+      - ./:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - DJANGO_DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/medical_research
+      - REDIS_URL=redis://cache:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@queue:5672/
+    depends_on:
+      - db
+      - cache
+      - queue
+    networks:
+      - development
+
+  # PostgreSQL database service
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=medical_research
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - development
+
+  # Redis cache service
+  cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - development
+
+  # RabbitMQ message queue service
+  queue:
+    image: rabbitmq:3.11-management-alpine
+    ports:
+      - "5672:5672"  # AMQP protocol port
+      - "15672:15672"  # Management interface port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - development
+
+# Persistent volumes for data storage
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+# Development network
+networks:
+  development:
+    driver: bridge
